@@ -18,8 +18,8 @@
 **                                                                    **
 ** ****************************************************************** */
 
-// $Revision: 1.02 $
-// $Date: 2020/12/07 00:00:00 $
+// $Revision: 1.03 $
+// $Date: 2021/12/13 00:00:00 $
 // Written: Hanlin Dong, Xijun Wang, Tongji University, self@hanlindong.com
 //
 // Description: This file contains the class definition for DowelType.
@@ -56,15 +56,13 @@
 #define MAX_ITER 2000
 #define DEBUG false
 
-#define MAT_TAG_DowelType 0
-
 static int numDowelType = 0;
 
-OPS_Export void *
+void *
 OPS_DowelType()
 {
     if (numDowelType == 0) {
-        opserr << "DowelType v1.02 - Written by Hanlin Dong (self@hanlindong.com) and Xijun Wang ";
+        opserr << "DowelType v1.03 - Written by Hanlin Dong (self@hanlindong.com) and Xijun Wang ";
         opserr << "from Tongji University, Copyright 2021 - Use at your Own Peril" << endln;
         numDowelType = 1;
     }
@@ -507,7 +505,6 @@ double DowelType::envelope(double disp)
             disp < dult_p ? fcap_p - kdesc_p * (disp - dcap_p) :
                             DBL_EPSILON;
     } else if (envType == 2) {
-        // double k; // fake k
         force = 
             disp < dult_n     ? DBL_EPSILON :
             disp < dcap_n     ? fcap_n - kdesc_n * (disp - dcap_n) :
@@ -549,7 +546,6 @@ double DowelType::denvelope(double disp)
             disp <= dult_p ? -kdesc_p :
                             -kdesc_p;
     } else if (envType == 2) {
-        // double f; // fake f
         tangent = 
             disp < dult_n ? -kdesc_n :
             disp < dcap_n ? -kdesc_n :
@@ -576,7 +572,7 @@ double DowelType::denvelope(double disp)
     return tangent;
 }
 
-// solver the intersection of the envelope and a line. Provide tangent and intercept.
+// solve the intersection of the envelope and a line. Provide tangent and intercept.
 double DowelType::envIntersection(double k, double b)
 {
     double xm = 0.0;
@@ -828,14 +824,14 @@ void DowelType::resetReversePoints(double disp, double force, bool flag)
     // No reloading part: goes from pinching to envelope.
     if ((flag && cy <= dy && dx >= envIntersection(mk, my)) || (!flag && cy >= dy && dx <= envIntersection(mk, my))) {
         if (DEBUG) opserr << "pinching scenario 1: no reloading part, goes from pinching to envelope." << endln;
-        double Dcd = cx - dx;
+        double delta_cd = cx - dx;
         dx = envIntersection(mk, my);
         dy = envelope(dx);
         dk = mk;
         cx = 0.;
         cy = my;
         if ((flag && disp > dyield) || (!flag && disp < -dyield)) {
-            double x = envIntersection(mk, my) + Dcd;
+            double x = envIntersection(mk, my) + delta_cd;
             dx = x;
             dy = envelope(dx);
             dk = denvelope(dx);
@@ -1234,7 +1230,6 @@ UniaxialMaterial *DowelType::getCopy(void)
 
 int DowelType::sendSelf(int cTag, Channel &theChannel)
 {
-    opserr << "sendself triggered" << endln;
     int res = 0;
     static Vector data(98 + 2 * envSize);
     data(0)  = this->getTag();
@@ -1337,7 +1332,7 @@ int DowelType::recvSelf(int cTag, Channel &theChannel,
                  FEM_ObjectBroker &theBroker)
 {
     int res = 0;
-    static Vector data(31);
+    static Vector data(98 + 2 * envSize);
     res = theChannel.recvVector(this->getDbTag(), cTag, data);
     if (res < 0)
         opserr << "DowelType::recvSelf() - failed to recv data\n";
